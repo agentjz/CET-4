@@ -9,6 +9,7 @@ import time
 import urllib.error
 import urllib.request
 import webbrowser
+from shutil import which
 from pathlib import Path
 
 
@@ -50,8 +51,8 @@ def main() -> int:
     wait_for_backend()
     wait_for_http(FRONTEND_URL, "frontend")
     print_step("打开浏览器")
-    webbrowser.open(FRONTEND_URL, new=1)
-    print_success("启动完成。浏览器打开后，用 admin / password 登录。")
+    open_private_browser(FRONTEND_URL)
+    print_success("启动完成。匿名浏览器打开后，用 admin / password 登录。")
     return 0
 
 
@@ -74,6 +75,42 @@ def start_powershell_window(title: str, script: Path) -> None:
         creationflags=CREATE_NEW_CONSOLE,
     )
     print_success(f"已打开窗口：{title}")
+
+
+def open_private_browser(url: str) -> None:
+    browser_commands = [
+        (find_browser("msedge"), ["--inprivate", url]),
+        (find_browser("chrome"), ["--incognito", url]),
+        (find_browser("chromium"), ["--incognito", url]),
+    ]
+    for executable, args in browser_commands:
+        if not executable:
+            continue
+        subprocess.Popen([executable, *args], cwd=ROOT)
+        print_success(f"已打开匿名浏览器：{Path(executable).name}")
+        return
+    webbrowser.open(url, new=1)
+    print("没有找到 Edge/Chrome/Chromium 命令，已使用系统默认浏览器打开。")
+
+
+def find_browser(command: str) -> str | None:
+    executable = which(command)
+    if executable:
+        return executable
+    known_paths = {
+        "msedge": [
+            Path("C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"),
+            Path("C:/Program Files/Microsoft/Edge/Application/msedge.exe"),
+        ],
+        "chrome": [
+            Path("C:/Program Files/Google/Chrome/Application/chrome.exe"),
+            Path("C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"),
+        ],
+    }
+    for path in known_paths.get(command, []):
+        if path.exists():
+            return str(path)
+    return None
 
 
 def stop_project_port(port: int, service_name: str) -> None:
