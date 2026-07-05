@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { collectConsoleIssues, login } from './helpers'
 
 const CET4_EXAM = 'CET-4 四级考试平台演示'
+const ANSWER_SHEET_EXAM = '答题卡试卷演示'
 const CET4_AUDIO = '2023-03-cet4-listening.mp3'
 
 test.describe('在线考试', () => {
@@ -125,6 +126,46 @@ test.describe('在线考试', () => {
     await expect(page.getByText('阅卷已完成')).toBeVisible()
     await expect(page.getByText('阅卷状态').locator('..')).toContainText('已出分')
     await expect(page.getByRole('button', { name: '保存评分' })).toHaveCount(0)
+
+    expect(consoleIssues).toEqual([])
+  })
+
+  test('答题卡试卷支持材料查看、题号作答、提交和人工阅卷保存', async ({ page }) => {
+    const consoleIssues = collectConsoleIssues(page)
+    await login(page)
+
+    await page.getByRole('menuitem', { name: '考试中心' }).click()
+    await page.getByRole('row').filter({ hasText: ANSWER_SHEET_EXAM }).getByRole('button', { name: '准备考试' }).click()
+    await page.getByRole('button', { name: '开始考试' }).click()
+    await expect(page.getByRole('heading', { name: ANSWER_SHEET_EXAM })).toBeVisible()
+    await expect(page.getByText('听力材料')).toBeVisible()
+    await expect(page.locator(`audio[src$="${CET4_AUDIO}"]`).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: '阅读材料' })).toBeVisible()
+
+    const answerSheetQuestions = page.locator('.answer-sheet-question')
+    await answerSheetQuestions.nth(0).getByText('A', { exact: true }).click()
+    await answerSheetQuestions.nth(1).getByText('A', { exact: true }).click()
+    await answerSheetQuestions.nth(1).getByText('C', { exact: true }).click()
+    const writingAnswer = 'This answer sheet writing response is saved and reviewed in the browser flow.'
+    await answerSheetQuestions.nth(2).getByPlaceholder('请输入答案').fill(writingAnswer)
+    await expect(page.getByText('答案已保存')).toBeVisible()
+
+    await page.locator('.exam-actions').getByRole('button', { name: '提交试卷' }).click()
+    await page.getByRole('button', { name: '提交', exact: true }).click()
+    await expect(page.getByRole('heading', { name: ANSWER_SHEET_EXAM })).toBeVisible()
+    await expect(page.getByText('阅卷状态').locator('..')).toContainText('待阅卷')
+    await expect(page.getByText(writingAnswer)).toBeVisible()
+
+    await page.locator('li.el-menu-item').filter({ hasText: /^考试管理$/ }).click()
+    await page.getByPlaceholder('搜索考试名称').fill(ANSWER_SHEET_EXAM)
+    await page.getByRole('button', { name: '搜索' }).click()
+    await page.getByRole('row').filter({ hasText: ANSWER_SHEET_EXAM }).getByRole('button', { name: '成绩' }).click()
+    await page.getByRole('dialog', { name: new RegExp(`${ANSWER_SHEET_EXAM} - 成绩`) }).getByRole('button', { name: '查看详情' }).first().click()
+    const reviewForm = page.locator('.writing-review-form').first()
+    await reviewForm.locator('.el-input-number input').fill('8')
+    await reviewForm.getByPlaceholder('阅卷评语').fill('答题卡写作评分')
+    await reviewForm.getByRole('button', { name: '保存评分' }).click()
+    await expect(page.getByText('评分已保存')).toBeVisible()
 
     expect(consoleIssues).toEqual([])
   })

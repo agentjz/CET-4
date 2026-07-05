@@ -54,3 +54,6 @@ temp/
 .turbo/
 __pycache__/
 *.pyc
+
+# Local research references
+ref/

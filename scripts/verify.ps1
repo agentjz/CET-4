@@ -55,7 +55,7 @@ try {
   Invoke-KaoshiDocker compose config | Out-Null
 
   Write-Host "== Documentation scan =="
-  rg -n "kaoshi-studio|listen-to-this" . --glob "!scripts/verify.ps1"
+  rg -n "kaoshi-studio|listen-to-this" . --glob "!scripts/verify.ps1" --glob "!ref/**"
   if ($LASTEXITCODE -eq 0) { throw "Found stale or unimplemented wording." }
   if ($LASTEXITCODE -ne 1) { throw "rg scan failed." }
 

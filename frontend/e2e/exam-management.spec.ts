@@ -156,7 +156,7 @@ test.describe('考试管理', () => {
           },
         ],
         paperQuestions: [],
-        materials: [],
+        materialGroups: [],
         answerCardItems: [],
       },
     })
@@ -203,6 +203,60 @@ test.describe('考试管理', () => {
     await expect(examDialog.locator('.paper-table')).toContainText(changedStem)
     await expect(examDialog.locator('.paper-table')).not.toContainText(originalStem)
     await examDialog.getByRole('button', { name: '取消' }).click()
+
+    expect(consoleIssues).toEqual([])
+  })
+
+  test('管理端支持通过 UI 创建和发布答题卡试卷', async ({ page }) => {
+    const consoleIssues = collectConsoleIssues(page)
+    await login(page)
+
+    await page.locator('li.el-menu-item').filter({ hasText: /^考试管理$/ }).click()
+    await page.getByRole('button', { name: '新建考试' }).click()
+    const examDialog = page.getByRole('dialog', { name: '新建考试' })
+    await examDialog.getByText('答题卡试卷').click()
+
+    await examDialog.getByRole('button', { name: '添加材料块' }).click()
+    await examDialog.getByPlaceholder('材料块名称，如 听力材料').fill('听力材料')
+    await examDialog.getByPlaceholder('输入外部链接或本地资源路径').fill('/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3')
+    await examDialog.getByRole('button', { name: '添加链接' }).click()
+    await expect(examDialog.locator('.material-table')).toContainText('2023-03-cet4-listening.mp3')
+
+    const batchCard = examDialog.locator('.batch-card')
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(0), '1')
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(1), '1')
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(2), '5')
+    await batchCard.getByRole('button', { name: '批量生成' }).click()
+    await batchCard.locator('.el-select').first().click()
+    await page.getByRole('option', { name: '多选' }).click()
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(0), '2')
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(1), '2')
+    await batchCard.getByRole('button', { name: '批量生成' }).click()
+    await batchCard.locator('.el-select').first().click()
+    await page.getByRole('option', { name: '写作' }).click()
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(0), '3')
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(1), '3')
+    await setNumberInput(batchCard.locator('.el-input-number input').nth(2), '10')
+    await batchCard.getByRole('button', { name: '批量生成' }).click()
+    await expect(examDialog.getByText('3 题')).toBeVisible()
+    await expect(examDialog.getByText('20 分')).toBeVisible()
+
+    const examTitle = `答题卡浏览器考试 ${Date.now()}`
+    await examDialog.getByLabel('考试名称').fill(examTitle)
+    await examDialog.getByLabel('考试描述').fill('Playwright 创建答题卡考试')
+    await examDialog.getByText('整卷一页').click()
+    await examDialog.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.getByText('草稿已保存')).toBeVisible()
+    const savedDialog = page.getByRole('dialog', { name: '编辑考试' })
+    await expect(savedDialog.locator('.material-table')).toContainText('2023-03-cet4-listening.mp3')
+    await expect(savedDialog.getByText('3 题')).toBeVisible()
+    await savedDialog.getByRole('button', { name: '发布考试' }).click()
+    await expect(page.getByText('考试已发布')).toBeVisible()
+    await savedDialog.getByRole('button', { name: '取消' }).click()
+
+    await page.getByPlaceholder('搜索考试名称').fill(examTitle)
+    await page.getByRole('button', { name: '搜索' }).click()
+    await expect(page.getByRole('row').filter({ hasText: examTitle })).toContainText('3 题 / 20 分')
 
     expect(consoleIssues).toEqual([])
   })

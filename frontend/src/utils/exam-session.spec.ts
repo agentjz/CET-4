@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ExamQuestion } from '@/api/exam-business'
-import { buildSubmitAnswers, countAnsweredQuestions, formatRemainingTime, isQuestionAnswered } from './exam-session'
+import {
+  buildAnswerCardGroups,
+  buildSubmitAnswers,
+  countAnsweredQuestions,
+  formatRemainingTime,
+  groupQuestionsByType,
+  isQuestionAnswered,
+  questionIndexById,
+} from './exam-session'
 
 const questions: ExamQuestion[] = [
   {
@@ -58,5 +66,17 @@ describe('exam session helpers', () => {
   it('formats non-negative remaining time', () => {
     expect(formatRemainingTime(65)).toBe('01:05')
     expect(formatRemainingTime(-1)).toBe('00:00')
+  })
+
+  it('builds grouped navigation models', () => {
+    expect(questionIndexById(questions, 2)).toBe(1)
+    expect(groupQuestionsByType(questions).map((group) => [group.id, group.questions.length])).toEqual([
+      ['SINGLE_CHOICE', 1],
+      ['MULTIPLE_CHOICE', 1],
+      ['WRITING', 1],
+    ])
+    expect(buildAnswerCardGroups('ANSWER_SHEET', questions)).toEqual([
+      { id: 'ANSWER_SHEET', title: '答题卡', questions },
+    ])
   })
 })

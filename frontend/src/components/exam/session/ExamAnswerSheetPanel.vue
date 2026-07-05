@@ -3,7 +3,6 @@
     <header class="answer-sheet-panel__header">
       <div>
         <h2>答题卡</h2>
-        <p>按题号填写答案，试卷材料在上方查看。</p>
       </div>
       <span>{{ questions.length }} 题</span>
     </header>
@@ -113,12 +112,6 @@ function isOptionBasedQuestion(question: ExamQuestion) {
   color: var(--ks-text);
   font-size: 18px;
   letter-spacing: 0;
-}
-
-.answer-sheet-panel__header p {
-  margin: 6px 0 0;
-  color: var(--ks-text-muted);
-  line-height: 1.5;
 }
 
 .answer-sheet-panel__header span {

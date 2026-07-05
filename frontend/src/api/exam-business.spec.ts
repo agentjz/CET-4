@@ -96,7 +96,7 @@ describe('exam business api', () => {
       departmentIds: [],
       rules: [{ bankId: 1, singleCount: 1, singleScore: 5, multipleCount: 0, multipleScore: 0, writingCount: 1, writingScore: 15 }],
       paperQuestions: [{ questionId: 2, score: 5, sortOrder: 10 }],
-      materials: [],
+      materialGroups: [],
       answerCardItems: [],
     })
     await fetchAdminExamDetail(1)
@@ -154,7 +154,7 @@ describe('exam business api', () => {
       departmentIds: [],
       rules: [{ bankId: 1, singleCount: 1, singleScore: 5, multipleCount: 0, multipleScore: 0, writingCount: 1, writingScore: 15 }],
       paperQuestions: [{ questionId: 2, score: 5, sortOrder: 10 }],
-      materials: [],
+      materialGroups: [],
       answerCardItems: [],
     })
     expect(apiClient.get).toHaveBeenCalledWith('/api/admin/exams/1')

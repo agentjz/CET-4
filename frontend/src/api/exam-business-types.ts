@@ -61,8 +61,11 @@ export interface QuestionAttachment extends QuestionAttachmentPayload {
   sortOrder: number
 }
 
-export interface ExamMaterialPayload {
-  title: string
+export type ExamMaterialSourceType = 'UPLOAD' | 'EXISTING_ATTACHMENT' | 'EXTERNAL_LINK' | 'LOCAL_ASSET'
+
+export interface ExamMaterialFilePayload {
+  sourceType: ExamMaterialSourceType
+  displayName: string
   description: string
   fileName: string
   fileUrl: string
@@ -70,8 +73,20 @@ export interface ExamMaterialPayload {
   sortOrder: number
 }
 
-export interface ExamMaterial extends ExamMaterialPayload {
+export interface ExamMaterialFile extends ExamMaterialFilePayload {
   id: number
+}
+
+export interface ExamMaterialGroupPayload {
+  title: string
+  description: string
+  sortOrder: number
+  files: ExamMaterialFilePayload[]
+}
+
+export interface ExamMaterialGroup extends Omit<ExamMaterialGroupPayload, 'files'> {
+  id: number
+  files: ExamMaterialFile[]
 }
 
 export interface ExamAnswerCardItemPayload {
@@ -128,7 +143,7 @@ export interface ExamPayload {
   departmentIds: number[]
   rules: ExamRulePayload[]
   paperQuestions: ExamPaperQuestionPayload[]
-  materials: ExamMaterialPayload[]
+  materialGroups: ExamMaterialGroupPayload[]
   answerCardItems: ExamAnswerCardItemPayload[]
 }
 
@@ -180,7 +195,7 @@ export interface Exam {
   departmentIds: number[]
   rules: ExamRule[]
   paperQuestions: ExamPaperQuestion[]
-  materials: ExamMaterial[]
+  materialGroups: ExamMaterialGroup[]
   answerCardItems: ExamAnswerCardItem[]
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED'
 }
@@ -213,7 +228,7 @@ export interface ExamSession {
   displayMode: ExamPayload['displayMode']
   startedAt: string
   attemptStatus: 'IN_PROGRESS' | 'SUBMITTED'
-  materials: ExamMaterial[]
+  materialGroups: ExamMaterialGroup[]
   questions: ExamQuestion[]
 }
 

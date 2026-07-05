@@ -1,8 +1,9 @@
 package com.kaoshi.exam.dto;
 
-public record ExamMaterialResponse(
+public record ExamMaterialFileResponse(
         Long id,
-        String title,
+        String sourceType,
+        String displayName,
         String description,
         String fileName,
         String fileUrl,

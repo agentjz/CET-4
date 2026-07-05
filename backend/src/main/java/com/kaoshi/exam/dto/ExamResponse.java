@@ -23,7 +23,7 @@ public record ExamResponse(
         List<Long> departmentIds,
         List<ExamRuleResponse> rules,
         List<ExamPaperQuestionResponse> paperQuestions,
-        List<ExamMaterialResponse> materials,
+        List<ExamMaterialGroupResponse> materialGroups,
         List<ExamAnswerCardItemResponse> answerCardItems,
         String status
 ) {

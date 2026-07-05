@@ -15,16 +15,7 @@
       <section class="exam-workspace">
         <main class="question-stack">
           <template v-if="session.examMode === 'ANSWER_SHEET'">
-            <section v-if="session.materials.length" class="exam-materials" aria-label="试卷材料">
-              <article v-for="material in session.materials" :key="material.id" class="exam-material">
-                <h2>{{ material.title }}</h2>
-                <p v-if="material.description">{{ material.description }}</p>
-                <img v-if="material.mediaType === 'IMAGE'" :src="resolveResourceUrl(material.fileUrl)" :alt="material.fileName" />
-                <audio v-else-if="material.mediaType === 'AUDIO'" :src="resolveResourceUrl(material.fileUrl)" controls />
-                <iframe v-else-if="material.fileUrl.toLowerCase().endsWith('.pdf')" :src="resolveResourceUrl(material.fileUrl)" title="试卷材料" />
-                <el-link v-else :href="resolveResourceUrl(material.fileUrl)" target="_blank">{{ material.fileName }}</el-link>
-              </article>
-            </section>
+            <ExamMaterialViewer :material-groups="session.materialGroups" />
 
             <ExamAnswerSheetPanel
               :questions="session.questions"
@@ -114,20 +105,23 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 import ExamAnswerCard from '@/components/exam/session/ExamAnswerCard.vue'
 import ExamAnswerSheetPanel from '@/components/exam/session/ExamAnswerSheetPanel.vue'
+import ExamMaterialViewer from '@/components/exam/session/ExamMaterialViewer.vue'
 import ExamQuestionPanel from '@/components/exam/session/ExamQuestionPanel.vue'
 import { useAnswerSnapshotSaver } from '@/composables/use-answer-snapshot-saver'
 import { saveExamAnswers, startExam, submitExam, type ExamQuestion, type ExamSession } from '@/api/exam-business'
-import { resolveResourceUrl } from '@/utils/resource-url'
 import {
+  buildAnswerCardGroups,
   buildSubmitAnswers,
   countAnsweredQuestions,
   formatRemainingTime,
+  groupQuestionsByType,
   isQuestionAnswered,
+  questionIndexById,
   type MultipleAnswerMap,
   type SingleAnswerMap,
   type TextAnswerMap,
 } from '@/utils/exam-session'
-import { isManualReviewType, isMultipleAnswerType, questionTypeText } from '@/utils/question-types'
+import { isManualReviewType, isMultipleAnswerType } from '@/utils/question-types'
 
 const route = useRoute()
 const router = useRouter()
@@ -162,30 +156,7 @@ const unansweredCount = computed(() => Math.max(0, (session.value?.questions.len
 const hasActiveAttempt = computed(() => Boolean(session.value && !submitted.value))
 const saveStatusText = answerSaver.saveStatusText
 const displayQuestionGroups = computed(() => groupQuestionsByType(session.value?.questions ?? []))
-const groupedQuestions = computed<AnswerCardGroup[]>(() => {
-  if (session.value?.examMode === 'ANSWER_SHEET') {
-    return [{
-      id: 'ANSWER_SHEET',
-      title: '答题卡',
-      questions: session.value.questions,
-    }]
-  }
-  const groups = displayQuestionGroups.value.map((group) => ({
-    id: group.id,
-    title: group.title || '试题',
-    questions: group.questions,
-  }))
-  if (groups.length > 0) {
-    return groups
-  }
-  return groupQuestionsByType(session.value?.questions ?? [])
-})
-
-interface AnswerCardGroup {
-  id: string
-  title: string
-  questions: ExamQuestion[]
-}
+const groupedQuestions = computed(() => buildAnswerCardGroups(session.value?.examMode ?? 'STRUCTURED', session.value?.questions ?? []))
 
 onMounted(() => {
   window.addEventListener('beforeunload', preventUnload)
@@ -287,18 +258,7 @@ function isAnswered(question: ExamQuestion) {
 }
 
 function questionGlobalIndex(questionId: number) {
-  return session.value?.questions.findIndex((question) => question.questionId === questionId) ?? -1
-}
-
-function groupQuestionsByType(questions: ExamQuestion[]) {
-  const typeOrder: ExamQuestion['type'][] = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'WRITING']
-  return typeOrder
-    .map((type) => ({
-      id: type,
-      title: questionTypeText(type),
-      questions: questions.filter((question) => question.type === type),
-    }))
-    .filter((group) => group.questions.length > 0)
+  return questionIndexById(session.value?.questions ?? [], questionId)
 }
 
 async function selectQuestion(questionId: number) {
@@ -450,48 +410,6 @@ function preventUnload(event: BeforeUnloadEvent) {
   margin: 8px 0 0;
   color: var(--ks-text);
   font-size: 16px;
-}
-
-.exam-materials {
-  display: grid;
-  gap: 12px;
-}
-
-.exam-material {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--ks-border);
-  border-radius: var(--ks-radius);
-  background: #fff;
-}
-
-.exam-material h2 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.exam-material p {
-  margin: 0;
-  color: var(--ks-text-muted);
-  line-height: 1.6;
-}
-
-.exam-material img {
-  width: 100%;
-  max-height: 620px;
-  object-fit: contain;
-}
-
-.exam-material audio {
-  width: 100%;
-}
-
-.exam-material iframe {
-  width: 100%;
-  height: min(72vh, 760px);
-  border: 1px solid var(--ks-border);
-  border-radius: var(--ks-radius);
 }
 
 .question-submit-row {

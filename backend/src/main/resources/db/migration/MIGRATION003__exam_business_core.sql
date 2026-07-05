@@ -95,18 +95,62 @@ create table exams (
   index idx_exams_time (start_time, end_time)
 );
 
-create table exam_materials (
+create table exam_material_groups (
   id bigint primary key auto_increment,
   exam_id bigint not null,
   title varchar(255) not null,
+  description text null,
+  sort_order int not null default 0,
+  created_at datetime not null default current_timestamp,
+  constraint fk_exam_material_groups_exam foreign key (exam_id) references exams (id),
+  index idx_exam_material_groups_exam (exam_id)
+);
+
+create table exam_material_files (
+  id bigint primary key auto_increment,
+  group_id bigint not null,
+  exam_id bigint not null,
+  source_type varchar(32) not null default 'EXTERNAL_LINK',
+  display_name varchar(255) not null,
   description text null,
   file_name varchar(255) not null,
   file_url varchar(1000) not null,
   media_type varchar(32) not null,
   sort_order int not null default 0,
   created_at datetime not null default current_timestamp,
-  constraint fk_exam_materials_exam foreign key (exam_id) references exams (id),
-  index idx_exam_materials_exam (exam_id)
+  constraint fk_exam_material_files_group foreign key (group_id) references exam_material_groups (id),
+  constraint fk_exam_material_files_exam foreign key (exam_id) references exams (id),
+  index idx_exam_material_files_group (group_id),
+  index idx_exam_material_files_exam (exam_id)
+);
+
+create table exam_published_material_groups (
+  id bigint primary key auto_increment,
+  exam_id bigint not null,
+  title varchar(255) not null,
+  description text null,
+  sort_order int not null default 0,
+  created_at datetime not null default current_timestamp,
+  constraint fk_exam_published_material_groups_exam foreign key (exam_id) references exams (id),
+  index idx_exam_published_material_groups_exam (exam_id)
+);
+
+create table exam_published_material_files (
+  id bigint primary key auto_increment,
+  group_id bigint not null,
+  exam_id bigint not null,
+  source_type varchar(32) not null default 'EXTERNAL_LINK',
+  display_name varchar(255) not null,
+  description text null,
+  file_name varchar(255) not null,
+  file_url varchar(1000) not null,
+  media_type varchar(32) not null,
+  sort_order int not null default 0,
+  created_at datetime not null default current_timestamp,
+  constraint fk_exam_published_material_files_group foreign key (group_id) references exam_published_material_groups (id),
+  constraint fk_exam_published_material_files_exam foreign key (exam_id) references exams (id),
+  index idx_exam_published_material_files_group (group_id),
+  index idx_exam_published_material_files_exam (exam_id)
 );
 
 create table exam_answer_card_items (
@@ -407,6 +451,9 @@ values (2, '2023-03-cet4-listening.mp3', '/local-assets/cet4/2023-03/set-1/2023-
 insert into exams (id, title, description, qualify_score, start_time, end_time, duration_minutes, time_limit, attempt_limit, exam_mode, display_mode, question_order_mode, open_type, status)
 values (1, 'CET-4 四级考试平台演示', '简单题库演示考试', 20, '2026-01-01 00:00:00', '2099-12-31 23:59:59', 45, true, null, 'STRUCTURED', 'ALL', 'FIXED', 'PUBLIC', 'PUBLISHED');
 
+insert into exams (id, title, description, qualify_score, start_time, end_time, duration_minutes, time_limit, attempt_limit, exam_mode, display_mode, question_order_mode, open_type, status)
+values (2, '答题卡试卷演示', '试卷材料和答题卡分离的演示考试', 10, '2026-01-01 00:00:00', '2099-12-31 23:59:59', 45, true, null, 'ANSWER_SHEET', 'ALL', 'FIXED', 'PUBLIC', 'PUBLISHED');
+
 insert into exam_published_questions (id, exam_id, source_question_id, bank_id, bank_name, type, stem, analysis, score, sort_order)
 values
   (1, 1, 1, 1, '四级样例题库', 'SINGLE_CHOICE', 'Which word is closest in meaning to "essential"?', 'essential 表示必要的。', 5, 10),
@@ -422,6 +469,55 @@ select question_id, answer_label, sort_order from question_answer_labels where q
 
 insert into exam_published_attachments (published_question_id, file_name, file_url, media_type, sort_order)
 select question_id, file_name, file_url, media_type, sort_order from question_attachments where question_id = 2;
+
+insert into exam_material_groups (id, exam_id, title, description, sort_order)
+values
+  (1, 2, '听力材料', '播放音频后在下方答题卡填写答案。', 10),
+  (2, 2, '阅读材料', '阅读材料可以是 PDF、图片、文件或外部链接。', 20);
+
+insert into exam_material_files (id, group_id, exam_id, source_type, display_name, description, file_name, file_url, media_type, sort_order)
+values
+  (1, 1, 2, 'LOCAL_ASSET', '四级听力音频', '演示听力音频材料', '2023-03-cet4-listening.mp3', '/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3', 'AUDIO', 10),
+  (2, 2, 2, 'EXTERNAL_LINK', '阅读材料链接', '演示外部材料链接', 'reading-material.html', 'https://example.com/reading-material.html', 'FILE', 10);
+
+insert into exam_published_material_groups (id, exam_id, title, description, sort_order)
+values
+  (1, 2, '听力材料', '播放音频后在下方答题卡填写答案。', 10),
+  (2, 2, '阅读材料', '阅读材料可以是 PDF、图片、文件或外部链接。', 20);
+
+insert into exam_published_material_files (id, group_id, exam_id, source_type, display_name, description, file_name, file_url, media_type, sort_order)
+values
+  (1, 1, 2, 'LOCAL_ASSET', '四级听力音频', '演示听力音频材料', '2023-03-cet4-listening.mp3', '/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3', 'AUDIO', 10),
+  (2, 2, 2, 'EXTERNAL_LINK', '阅读材料链接', '演示外部材料链接', 'reading-material.html', 'https://example.com/reading-material.html', 'FILE', 10);
+
+insert into exam_answer_card_items (exam_id, question_no, answer_type, option_labels, correct_labels, score, sort_order)
+values
+  (2, 1, 'SINGLE_CHOICE', 'A,B,C,D', 'A', 5, 10),
+  (2, 2, 'MULTIPLE_CHOICE', 'A,B,C,D', 'A,C', 5, 20),
+  (2, 3, 'WRITING', '', '', 10, 30);
+
+insert into exam_published_questions (id, exam_id, source_question_id, bank_id, bank_name, type, stem, analysis, score, sort_order)
+values
+  (5, 2, -1, 0, '答题卡', 'SINGLE_CHOICE', '第 1 题', null, 5, 10),
+  (6, 2, -2, 0, '答题卡', 'MULTIPLE_CHOICE', '第 2 题', null, 5, 20),
+  (7, 2, -3, 0, '答题卡', 'WRITING', '第 3 题', null, 10, 30);
+
+insert into exam_published_options (published_question_id, option_label, content, is_correct, sort_order)
+values
+  (5, 'A', 'A', true, 10),
+  (5, 'B', 'B', false, 20),
+  (5, 'C', 'C', false, 30),
+  (5, 'D', 'D', false, 40),
+  (6, 'A', 'A', true, 10),
+  (6, 'B', 'B', false, 20),
+  (6, 'C', 'C', true, 30),
+  (6, 'D', 'D', false, 40);
+
+insert into exam_published_answer_labels (published_question_id, answer_label, sort_order)
+values
+  (5, 'A', 10),
+  (6, 'A', 10),
+  (6, 'C', 20);
 
 insert into menus (id, code, title, path, parent_id, sort_order, icon)
 values

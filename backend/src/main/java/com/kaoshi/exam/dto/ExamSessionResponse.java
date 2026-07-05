@@ -12,7 +12,7 @@ public record ExamSessionResponse(
         String displayMode,
         LocalDateTime startedAt,
         String attemptStatus,
-        List<ExamMaterialResponse> materials,
+        List<ExamMaterialGroupResponse> materialGroups,
         List<ExamQuestionResponse> questions
 ) {
 }

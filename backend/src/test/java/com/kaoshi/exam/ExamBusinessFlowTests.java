@@ -188,14 +188,22 @@ class ExamBusinessFlowTests {
                                   "departmentIds": [],
                                   "rules": [],
                                   "paperQuestions": [],
-                                  "materials": [
+                                  "materialGroups": [
                                     {
                                       "title": "听力材料",
                                       "description": "上方试卷材料",
-                                      "fileName": "2023-03-cet4-listening.mp3",
-                                      "fileUrl": "/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3",
-                                      "mediaType": "AUDIO",
-                                      "sortOrder": 10
+                                      "sortOrder": 10,
+                                      "files": [
+                                        {
+                                          "sourceType": "LOCAL_ASSET",
+                                          "displayName": "四级听力音频",
+                                          "description": "听力材料文件",
+                                          "fileName": "2023-03-cet4-listening.mp3",
+                                          "fileUrl": "/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3",
+                                          "mediaType": "AUDIO",
+                                          "sortOrder": 10
+                                        }
+                                      ]
                                     }
                                   ],
                                   "answerCardItems": [
@@ -228,7 +236,7 @@ class ExamBusinessFlowTests {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.examMode").value("ANSWER_SHEET"))
-                .andExpect(jsonPath("$.data.materials[0].mediaType").value("AUDIO"))
+                .andExpect(jsonPath("$.data.materialGroups[0].files[0].mediaType").value("AUDIO"))
                 .andExpect(jsonPath("$.data.answerCardItems.length()").value(3))
                 .andExpect(jsonPath("$.data.totalScore").value(20))
                 .andReturn()
@@ -247,7 +255,7 @@ class ExamBusinessFlowTests {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.examMode").value("ANSWER_SHEET"))
-                .andExpect(jsonPath("$.data.materials[0].fileUrl").value("/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3"))
+                .andExpect(jsonPath("$.data.materialGroups[0].files[0].fileUrl").value("/local-assets/cet4/2023-03/set-1/2023-03-cet4-listening.mp3"))
                 .andExpect(jsonPath("$.data.questions[0].questionId").value(-1))
                 .andExpect(jsonPath("$.data.questions[0].stem").value("第 1 题"))
                 .andExpect(jsonPath("$.data.questions[0].options.length()").value(4))
@@ -603,7 +611,7 @@ class ExamBusinessFlowTests {
                                     {"questionId": %d, "score": 7, "sortOrder": 10},
                                     {"questionId": %d, "score": 3, "sortOrder": 20}
                                   ],
-                                  "materials": [],
+                                  "materialGroups": [],
                                   "answerCardItems": []
                                 }
                                 """.formatted(bankId, multipleQuestionId, singleQuestionId)))
@@ -811,7 +819,7 @@ class ExamBusinessFlowTests {
                                     }
                                   ],
                                   "paperQuestions": [],
-                                  "materials": [],
+                                  "materialGroups": [],
                                   "answerCardItems": []
                                 }
                                 """.formatted(bankId)))
@@ -859,7 +867,7 @@ class ExamBusinessFlowTests {
                                     }
                                   ],
                                   "paperQuestions": [],
-                                  "materials": [],
+                                  "materialGroups": [],
                                   "answerCardItems": []
                                 }
                                 """.formatted(bankId)))
@@ -1286,7 +1294,7 @@ class ExamBusinessFlowTests {
                                     }
                                   ],
                                   "paperQuestions": [],
-                                  "materials": [],
+                                  "materialGroups": [],
                                   "answerCardItems": []
                                 }
                                 """.formatted(fields, bankId, singleCount, singleScore, multipleCount, multipleScore, writingCount, writingScore)))

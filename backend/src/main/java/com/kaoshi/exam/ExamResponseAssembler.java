@@ -2,7 +2,8 @@ package com.kaoshi.exam;
 
 import com.kaoshi.exam.domain.Exam;
 import com.kaoshi.exam.dto.ExamPaperQuestionResponse;
-import com.kaoshi.exam.dto.ExamMaterialResponse;
+import com.kaoshi.exam.dto.ExamMaterialFileResponse;
+import com.kaoshi.exam.dto.ExamMaterialGroupResponse;
 import com.kaoshi.exam.dto.ExamQuestionOptionResponse;
 import com.kaoshi.exam.dto.ExamQuestionResponse;
 import com.kaoshi.exam.dto.ExamResponse;
@@ -48,7 +49,7 @@ final class ExamResponseAssembler {
                 exam.getDisplayMode(),
                 dateTimeValue(value(attempt, "startedAt")),
                 stringValue(value(attempt, "status")),
-                examMapper.findExamMaterials(exam.getId()).stream().map(this::toMaterialResponse).toList(),
+                examMapper.findPublishedMaterialGroups(exam.getId()).stream().map(this::toPublishedMaterialGroupResponse).toList(),
                 examMapper.findAttemptQuestions(attemptId).stream()
                         .map(this::toExamQuestionResponse)
                         .toList()
@@ -94,7 +95,7 @@ final class ExamResponseAssembler {
                 examMapper.findExamDepartmentIds(exam.getId()),
                 rules.stream().map(this::toRuleResponse).toList(),
                 paperQuestions.stream().map(this::toPaperQuestionResponse).toList(),
-                examMapper.findExamMaterials(exam.getId()).stream().map(this::toMaterialResponse).toList(),
+                examMapper.findExamMaterialGroups(exam.getId()).stream().map(this::toMaterialGroupResponse).toList(),
                 answerCardItems.stream().map(this::toAnswerCardItemResponse).toList(),
                 exam.getStatus()
         );
@@ -204,10 +205,33 @@ final class ExamResponseAssembler {
         );
     }
 
-    private ExamMaterialResponse toMaterialResponse(Map<String, Object> row) {
-        return new ExamMaterialResponse(
-                longValue(value(row, "id")),
+    private ExamMaterialGroupResponse toMaterialGroupResponse(Map<String, Object> row) {
+        Long groupId = longValue(value(row, "id"));
+        return new ExamMaterialGroupResponse(
+                groupId,
                 stringValue(value(row, "title")),
+                stringValue(value(row, "description")),
+                intValue(value(row, "sortOrder")),
+                examMapper.findExamMaterialFiles(groupId).stream().map(this::toMaterialFileResponse).toList()
+        );
+    }
+
+    private ExamMaterialGroupResponse toPublishedMaterialGroupResponse(Map<String, Object> row) {
+        Long groupId = longValue(value(row, "id"));
+        return new ExamMaterialGroupResponse(
+                groupId,
+                stringValue(value(row, "title")),
+                stringValue(value(row, "description")),
+                intValue(value(row, "sortOrder")),
+                examMapper.findPublishedMaterialFiles(groupId).stream().map(this::toMaterialFileResponse).toList()
+        );
+    }
+
+    private ExamMaterialFileResponse toMaterialFileResponse(Map<String, Object> row) {
+        return new ExamMaterialFileResponse(
+                longValue(value(row, "id")),
+                stringValue(value(row, "sourceType")),
+                stringValue(value(row, "displayName")),
                 stringValue(value(row, "description")),
                 stringValue(value(row, "fileName")),
                 stringValue(value(row, "fileUrl")),

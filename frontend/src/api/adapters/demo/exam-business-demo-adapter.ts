@@ -117,7 +117,13 @@ function toExamFromPayload(id: number, payload: ExamPayload, status: Exam['statu
     departmentIds: [...payload.departmentIds],
     rules,
     paperQuestions,
-    materials: payload.materials.map((material) => ({ id: nextId(state), ...material })),
+    materialGroups: payload.materialGroups.map((group) => ({
+      id: nextId(state),
+      title: group.title,
+      description: group.description,
+      sortOrder: group.sortOrder,
+      files: group.files.map((file) => ({ id: nextId(state), ...file })),
+    })),
     answerCardItems: payload.answerCardItems.map((item) => ({ id: nextId(state), ...item })),
     status,
     totalScore: paperQuestions.reduce((sum, question) => sum + question.score, 0),
@@ -153,7 +159,7 @@ function toSession(attempt: { id: number; examId: number; startedAt: string; sta
     displayMode: exam.displayMode,
     startedAt: attempt.startedAt,
     attemptStatus: attempt.status,
-    materials: clone(exam.materials),
+    materialGroups: clone(exam.materialGroups),
     questions: clone(attempt.questions),
   }
 }

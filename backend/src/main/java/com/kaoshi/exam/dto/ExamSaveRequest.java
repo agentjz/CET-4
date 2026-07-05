@@ -27,7 +27,7 @@ public record ExamSaveRequest(
         List<Long> departmentIds,
         List<@Valid ExamRuleRequest> rules,
         List<@Valid ExamPaperQuestionRequest> paperQuestions,
-        List<@Valid ExamMaterialRequest> materials,
+        List<@Valid ExamMaterialGroupRequest> materialGroups,
         List<@Valid ExamAnswerCardItemRequest> answerCardItems
 ) {
 }

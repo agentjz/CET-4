@@ -99,17 +99,58 @@ interface ExamCoreMapper {
     @Select("select * from exam_rules where exam_id = #{examId} order by sort_order, id")
     List<Map<String, Object>> findExamRules(@Param("examId") Long examId);
 
-    @Delete("delete from exam_materials where exam_id = #{examId}")
-    void deleteExamMaterials(@Param("examId") Long examId);
+    @Delete("delete from exam_material_files where exam_id = #{examId}")
+    void deleteExamMaterialFiles(@Param("examId") Long examId);
 
     @Insert("""
-            insert into exam_materials (exam_id, title, description, file_name, file_url, media_type, sort_order)
-            values (#{examId}, #{title}, #{description}, #{fileName}, #{fileUrl}, #{mediaType}, #{sortOrder})
+            insert into exam_material_files (group_id, exam_id, source_type, display_name, description, file_name, file_url, media_type, sort_order)
+            values (#{groupId}, #{examId}, #{sourceType}, #{displayName}, #{description}, #{fileName}, #{fileUrl}, #{mediaType}, #{sortOrder})
             """)
-    void insertExamMaterial(Map<String, Object> material);
+    void insertExamMaterialFile(Map<String, Object> material);
 
-    @Select("select * from exam_materials where exam_id = #{examId} order by sort_order, id")
-    List<Map<String, Object>> findExamMaterials(@Param("examId") Long examId);
+    @Delete("delete from exam_material_groups where exam_id = #{examId}")
+    void deleteExamMaterialGroups(@Param("examId") Long examId);
+
+    @Insert("""
+            insert into exam_material_groups (exam_id, title, description, sort_order)
+            values (#{examId}, #{title}, #{description}, #{sortOrder})
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    void insertExamMaterialGroup(Map<String, Object> group);
+
+    @Select("select * from exam_material_groups where exam_id = #{examId} order by sort_order, id")
+    List<Map<String, Object>> findExamMaterialGroups(@Param("examId") Long examId);
+
+    @Select("select * from exam_material_files where group_id = #{groupId} order by sort_order, id")
+    List<Map<String, Object>> findExamMaterialFiles(@Param("groupId") Long groupId);
+
+    @Select("select count(*) from exam_material_files where exam_id = #{examId}")
+    int countExamMaterialFiles(@Param("examId") Long examId);
+
+    @Delete("delete from exam_published_material_files where exam_id = #{examId}")
+    void deletePublishedMaterialFiles(@Param("examId") Long examId);
+
+    @Delete("delete from exam_published_material_groups where exam_id = #{examId}")
+    void deletePublishedMaterialGroups(@Param("examId") Long examId);
+
+    @Insert("""
+            insert into exam_published_material_groups (exam_id, title, description, sort_order)
+            values (#{examId}, #{title}, #{description}, #{sortOrder})
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    void insertPublishedMaterialGroup(Map<String, Object> group);
+
+    @Insert("""
+            insert into exam_published_material_files (group_id, exam_id, source_type, display_name, description, file_name, file_url, media_type, sort_order)
+            values (#{groupId}, #{examId}, #{sourceType}, #{displayName}, #{description}, #{fileName}, #{fileUrl}, #{mediaType}, #{sortOrder})
+            """)
+    void insertPublishedMaterialFile(Map<String, Object> material);
+
+    @Select("select * from exam_published_material_groups where exam_id = #{examId} order by sort_order, id")
+    List<Map<String, Object>> findPublishedMaterialGroups(@Param("examId") Long examId);
+
+    @Select("select * from exam_published_material_files where group_id = #{groupId} order by sort_order, id")
+    List<Map<String, Object>> findPublishedMaterialFiles(@Param("groupId") Long groupId);
 
     @Delete("delete from exam_answer_card_items where exam_id = #{examId}")
     void deleteExamAnswerCardItems(@Param("examId") Long examId);

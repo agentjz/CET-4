@@ -33,6 +33,9 @@ public class ExamService {
     private final ExamMapper examMapper;
     private final ExamResponseAssembler assembler;
     private final ExamPaperWorkflow paperWorkflow;
+    private final ExamMaterialWorkflow materialWorkflow;
+    private final ExamStructuredPaperWorkflow structuredPaperWorkflow;
+    private final ExamAnswerSheetWorkflow answerSheetWorkflow;
     private final ExamAttemptWorkflow attemptWorkflow;
     private final ExamGradingWorkflow gradingWorkflow;
     private final ExamPaperExportService exportService;
@@ -40,7 +43,10 @@ public class ExamService {
     public ExamService(ExamMapper examMapper) {
         this.examMapper = examMapper;
         this.assembler = new ExamResponseAssembler(examMapper);
-        this.paperWorkflow = new ExamPaperWorkflow(examMapper, assembler);
+        this.paperWorkflow = new ExamPaperWorkflow(examMapper);
+        this.materialWorkflow = new ExamMaterialWorkflow(examMapper);
+        this.structuredPaperWorkflow = new ExamStructuredPaperWorkflow(examMapper, assembler);
+        this.answerSheetWorkflow = new ExamAnswerSheetWorkflow(examMapper, materialWorkflow);
         this.attemptWorkflow = new ExamAttemptWorkflow(examMapper);
         this.gradingWorkflow = new ExamGradingWorkflow(examMapper);
         this.exportService = new ExamPaperExportService(examMapper);
@@ -61,29 +67,29 @@ public class ExamService {
 
     @Transactional
     public ExamResponse create(ExamSaveRequest request) {
-        paperWorkflow.validateDraft(request);
+        validateDraft(request);
         Exam exam = new Exam();
         paperWorkflow.fillExam(exam, request, "DRAFT");
         examMapper.insertExam(exam);
         paperWorkflow.replaceExamDepartments(exam.getId(), request.departmentIds());
-        paperWorkflow.replaceRules(exam.getId(), request.rules());
-        paperWorkflow.replaceAnswerSheet(exam.getId(), request.materials(), request.answerCardItems());
-        paperWorkflow.replaceDraftQuestions(exam.getId(), request);
+        structuredPaperWorkflow.replaceRules(exam.getId(), request.rules());
+        answerSheetWorkflow.replaceAnswerSheet(exam.getId(), request.materialGroups(), request.answerCardItems());
+        structuredPaperWorkflow.replaceDraftQuestions(exam.getId(), request);
         return detail(exam.getId());
     }
 
     @Transactional
     public ExamResponse update(Long id, ExamSaveRequest request) {
-        paperWorkflow.validateDraft(request);
+        validateDraft(request);
         Exam exam = findExam(id);
         paperWorkflow.ensureExamEditableAsDraft(exam);
-        paperWorkflow.clearPublishedSnapshotIfPresent(id);
+        clearPublishedSnapshot(id);
         paperWorkflow.fillExam(exam, request, "DRAFT");
         examMapper.updateExam(exam);
         paperWorkflow.replaceExamDepartments(id, request.departmentIds());
-        paperWorkflow.replaceRules(id, request.rules());
-        paperWorkflow.replaceAnswerSheet(id, request.materials(), request.answerCardItems());
-        paperWorkflow.replaceDraftQuestions(id, request);
+        structuredPaperWorkflow.replaceRules(id, request.rules());
+        answerSheetWorkflow.replaceAnswerSheet(id, request.materialGroups(), request.answerCardItems());
+        structuredPaperWorkflow.replaceDraftQuestions(id, request);
         return detail(id);
     }
 
@@ -91,11 +97,12 @@ public class ExamService {
     public ExamResponse publish(Long id) {
         Exam exam = findExam(id);
         paperWorkflow.ensureExamPublishable(exam);
-        paperWorkflow.validatePublish(exam, examMapper.findExamRules(id));
+        validatePublish(exam);
+        clearPublishedSnapshot(id);
         if ("ANSWER_SHEET".equals(exam.getExamMode())) {
-            paperWorkflow.rebuildAnswerSheetPublishedSnapshot(id);
+            answerSheetWorkflow.rebuildPublishedSnapshot(id);
         } else {
-            paperWorkflow.rebuildPublishedSnapshot(id);
+            structuredPaperWorkflow.rebuildPublishedSnapshot(id);
         }
         examMapper.updateExamStatus(id, "PUBLISHED");
         return detail(id);
@@ -114,12 +121,13 @@ public class ExamService {
         if (examMapper.countAttemptsByExam(id) > 0 || examMapper.countResultsByExam(id) > 0) {
             throw new BusinessException(ErrorCode.CONFLICT, "考试已有作答或成绩记录，不能删除，请关闭考试保留历史");
         }
-        paperWorkflow.clearPublishedSnapshotIfPresent(id);
+        clearPublishedSnapshot(id);
         examMapper.deleteDraftAttachments(id);
         examMapper.deleteDraftOptions(id);
         examMapper.deleteDraftAnswerLabels(id);
         examMapper.deleteDraftQuestions(id);
-        examMapper.deleteExamMaterials(id);
+        examMapper.deleteExamMaterialFiles(id);
+        examMapper.deleteExamMaterialGroups(id);
         examMapper.deleteExamAnswerCardItems(id);
         examMapper.deleteExamRules(id);
         examMapper.deleteExamDepartments(id);
@@ -145,23 +153,12 @@ public class ExamService {
         target.setStatus("DRAFT");
         examMapper.insertExam(target);
         paperWorkflow.replaceExamDepartments(target.getId(), examMapper.findExamDepartmentIds(id));
-        paperWorkflow.copyRules(id, target.getId());
-        copyAnswerSheet(id, target.getId());
-        paperWorkflow.copyPaperQuestions(id, target.getId());
+        structuredPaperWorkflow.copyRules(id, target.getId());
+        answerSheetWorkflow.copyAnswerSheet(id, target.getId());
+        if (!"ANSWER_SHEET".equals(source.getExamMode())) {
+            structuredPaperWorkflow.copyPaperQuestions(id, target.getId());
+        }
         return detail(target.getId());
-    }
-
-    private void copyAnswerSheet(Long sourceExamId, Long targetExamId) {
-        for (Map<String, Object> material : examMapper.findExamMaterials(sourceExamId)) {
-            Map<String, Object> row = new HashMap<>(material);
-            row.put("examId", targetExamId);
-            examMapper.insertExamMaterial(row);
-        }
-        for (Map<String, Object> item : examMapper.findExamAnswerCardItems(sourceExamId)) {
-            Map<String, Object> row = new HashMap<>(item);
-            row.put("examId", targetExamId);
-            examMapper.insertExamAnswerCardItem(row);
-        }
     }
 
     public ResponseEntity<byte[]> download(Long id) {
@@ -177,7 +174,7 @@ public class ExamService {
         if (examMapper.countAttemptsByExam(id) > 0 || examMapper.countResultsByExam(id) > 0) {
             throw new BusinessException(ErrorCode.CONFLICT, "考试已有作答记录，不能撤销发布");
         }
-        paperWorkflow.clearPublishedSnapshotIfPresent(id);
+        clearPublishedSnapshot(id);
         examMapper.updateExamStatus(id, "DRAFT");
         return detail(id);
     }
@@ -289,5 +286,28 @@ public class ExamService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "成绩不存在");
         }
         return result;
+    }
+
+    private void validateDraft(ExamSaveRequest request) {
+        paperWorkflow.validateDraftBasics(request);
+        if ("ANSWER_SHEET".equals(request.examMode())) {
+            answerSheetWorkflow.validateDraft(request);
+            return;
+        }
+        structuredPaperWorkflow.validateRules(request.rules());
+    }
+
+    private void validatePublish(Exam exam) {
+        paperWorkflow.validatePublishBasics(exam);
+        if ("ANSWER_SHEET".equals(exam.getExamMode())) {
+            answerSheetWorkflow.validatePublish(exam);
+            return;
+        }
+        structuredPaperWorkflow.validatePublish(exam, examMapper.findExamRules(exam.getId()));
+    }
+
+    private void clearPublishedSnapshot(Long examId) {
+        materialWorkflow.clearPublishedMaterials(examId);
+        paperWorkflow.clearPublishedQuestionsIfPresent(examId);
     }
 }
