@@ -16,7 +16,7 @@
         <div class="dashboard-hero__actions">
           <el-button type="primary" @click="router.push('/my/exam')">开始体验考试</el-button>
           <el-button @click="router.push('/exam/repo')">查看题库</el-button>
-          <a class="dashboard-link" href="https://github.com/agentjz/CET-4" target="_blank" rel="noreferrer" aria-label="GitHub 仓库">
+          <a class="dashboard-link" href="https://github.com/luckymaomi/CET-4" target="_blank" rel="noreferrer" aria-label="GitHub 仓库">
             <svg aria-hidden="true" viewBox="0 0 16 16">
               <path
                 fill="currentColor"

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/agentjz/CET-4"><img alt="GitHub Repo" src="https://img.shields.io/badge/GitHub-agentjz%2FCET--4-181717?logo=github"></a>
+  <a href="https://github.com/luckymaomi/CET-4"><img alt="GitHub Repo" src="https://img.shields.io/badge/GitHub-luckymaomi%2FCET--4-181717?logo=github"></a>
   <img alt="Java 21" src="https://img.shields.io/badge/Java-21-007396?logo=openjdk">
   <img alt="Spring Boot 3" src="https://img.shields.io/badge/Spring%20Boot-3-6DB33F?logo=springboot&logoColor=white">
   <img alt="Vue 3" src="https://img.shields.io/badge/Vue-3-42B883?logo=vuedotjs&logoColor=white">
@@ -15,7 +15,7 @@
 
 ## 🌐 在线体验
 
-在线项目体验地址：[https://agentjz.github.io/CET-4/](https://agentjz.github.io/CET-4/)
+在线项目体验地址：[https://luckymaomi.github.io/CET-4/](https://luckymaomi.github.io/CET-4/)
 
 体验账号：`admin` / `password`
 
